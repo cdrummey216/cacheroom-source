@@ -23,9 +23,8 @@ button
 
 button.btn-link.btn-plain
   padding: 0px
-  color: white
+  color: $body
   text-decoration: none
-  color: white
   &:hover, &:focus
     color: white
 
@@ -49,6 +48,9 @@ svg:hover
 svg text::selection
   background: none
 
+textarea::placeholder
+  color:#f8f1e5
+  
 textarea.chat
   border-radius: 0px
   resize: none !important
@@ -142,7 +144,7 @@ textarea
 
 .activity-item
   margin-bottom: 15px
-  &.TEXT_MESSAGE
+  &.TEXT_MESSAGE, &.SEND_MESSAGE
     .chat-meta
       font-size: 13px
       .timestamp
@@ -173,7 +175,7 @@ textarea
   .react-modal-content
     -webkit-overflow-scrolling: touch  
     border: 1px solid rgb(204, 204, 204)
-    background: rgb(0, 0, 0)
+    background: $primary
     overflow: auto
     border-radius: 4px
     outline: none
@@ -181,7 +183,7 @@ textarea
     max-width: 600px
     width: calc(100% - 30px)
     margin: 20px auto 0px auto
-    max-height: 75%
+    max-height: 85%
     position: relative
     .close-modal
       padding: 7px
@@ -194,7 +196,8 @@ textarea
     overflow: auto
     margin-bottom: 20px
   .react-modal-footer
-    margin-top: 25px
+    float: left
+    width: 25%
     button
       float: right
 
@@ -247,3 +250,7 @@ img.zoomable
 
 .react-modal-content_before-close
   opacity: 0
+
+div.form-group
+  float: left
+  width: 75%

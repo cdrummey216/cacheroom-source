@@ -1,7 +1,7 @@
 @import 'colors'
 
 .logo
-  height: 30px
+  height: 40px
   margin-right: 10px
 
 .nav-container
@@ -9,7 +9,7 @@
   top: 0px
   width: 100%
   z-index: 5
-  background: black
+  background: $secondary
   .alert-banner
     display: flex
     align-items: center
@@ -50,7 +50,6 @@ ul.navbar-nav
   li
     padding-bottom: 10px
     svg
-      width: 20px
       margin-right: 10px
     span
       width: auto
@@ -59,21 +58,24 @@ button.lock-room
   margin-right: 15px
   display: flex
 
+img.users-icon
+  width: 30px
+  
 @media(min-width: 768px)
   ul.navbar-nav li
-    margin-left: 25px
+    margin-left: 0px
     padding-bottom: 0px
 
 .nav-link
   display: flex
   align-items: center
-  color: $md-gray !important
+  color: $body !important
   &:hover
     color: white !important
 
 .navbar-collapse
   padding: 0px 1rem
-  background: black
+  background: $secondary
 
 .members-dropdown
   margin-left: 10px
@@ -81,11 +83,11 @@ button.lock-room
     .members-action
       margin-right: 5px
   .dropdown__content 
-    background: black
+    background: $secondary
     border-radius: 3px
     border: 1px solid $inactive
     padding: 15px
-    width: 175px
+    width: 200px
     left: -10px
     top: 35px
   ul
@@ -101,4 +103,6 @@ button.lock-room
       .icon-container
         float: right
       .me-icon, .owner-icon
-        width: 15px
+        width: 25px
+        top: -3px
+        position: relative
