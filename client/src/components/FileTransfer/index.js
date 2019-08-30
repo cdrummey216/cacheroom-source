@@ -104,7 +104,7 @@ export default class FileTransfer extends Component {
       <div className={`${styles} icon file-transfer btn btn-link`}>
         <input type="file" name="fileUploader" id="fileInput" ref={c => this._fileInput = c} />
         <label htmlFor="fileInput">
-          <File color="#fff" />
+          <Paperclip color="#fff" />
         </label>
       </div>
     )
