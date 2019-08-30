@@ -1,9 +1,9 @@
 {
-  "name": "darkwire.io",
-  "version": "2.0.0",
+  "name": "CacheRoom",
+  "version": "1.0.0",
   "description": "encrypted web chat",
   "main": "index.js",
-  "repository": "https://github.com/darkwire/darkwire.io.git",
+  "repository": "https://github.com/cdrummey216/cacheroom-source.git",
   "engines": {
     "yarn": "1.x"
   },
