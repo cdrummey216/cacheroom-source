@@ -277,7 +277,6 @@ Chat.propTypes = {
   clearActivities: PropTypes.func.isRequired,
   focusChat: PropTypes.bool.isRequired,
   scrollToBottom: PropTypes.func.isRequired,
-  translations: PropTypes.object.isRequired,
 }
 
 const mapStateToProps = state => ({
