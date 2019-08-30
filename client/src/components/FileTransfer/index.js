@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import uuid from 'uuid'
-import { File } from 'react-feather'
+import { Paperclip } from 'react-feather'
 import { sanitize } from 'utils'
 import {styles} from './styles.module.scss'
 
@@ -81,7 +81,7 @@ export default class FileTransfer extends Component {
       this.setState({
         localFileQueue,
       }, async () => {
-        this.props.sendEncryptedMessage({
+        this.props.sendSocketMessage({
           type: 'SEND_FILE',
           payload: {
             fileName: fileData.fileName,
@@ -104,7 +104,7 @@ export default class FileTransfer extends Component {
       <div className={`${styles} icon file-transfer btn btn-link`}>
         <input type="file" name="fileUploader" id="fileInput" ref={c => this._fileInput = c} />
         <label htmlFor="fileInput">
-          <File color="#fff" />
+          <Paperclip color="#F8F1E5" />
         </label>
       </div>
     )
@@ -112,5 +112,5 @@ export default class FileTransfer extends Component {
 }
 
 FileTransfer.propTypes = {
-  sendEncryptedMessage: PropTypes.func.isRequired,
+  sendSocketMessage: PropTypes.func.isRequired,
 }

@@ -1,10 +1,10 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import Crypto from 'utils/crypto'
-import { connect as connectSocket } from 'utils/socket'
+import { connect } from 'utils/socket'
 import Nav from 'components/Nav'
 import shortId from 'shortid'
-import ChatInput from 'components/Chat'
+import ChatInput from 'containers/Chat'
 import Connecting from 'components/Connecting'
 import Message from 'components/Message'
 import Username from 'components/Username'
@@ -21,22 +21,6 @@ import beepFile from 'audio/beep.mp3'
 import Zoom from 'utils/ImageZoom'
 import classNames from 'classnames'
 import { getObjectUrl } from 'utils/file'
-import { connect } from 'react-redux'
-import {
-  receiveEncryptedMessage,
-  createUser,
-  openModal,
-  closeModal,
-  setScrolledToBottom,
-  toggleWindowFocus,
-  toggleSoundEnabled,
-  toggleSocketConnected,
-  receiveUnencryptedMessage,
-  sendUnencryptedMessage,
-  sendEncryptedMessage,
-  setLanguage
-} from 'actions'
-import T from 'components/T'
 
 import styles from './styles.module.scss'
 
@@ -44,7 +28,7 @@ const crypto = new Crypto()
 
 Modal.setAppElement('#root');
 
-class Home extends Component {
+export default class Home extends Component {
   constructor(props) {
     super(props)
 
@@ -59,24 +43,58 @@ class Home extends Component {
   async componentWillMount() {
     const roomId = encodeURI(this.props.match.params.roomId)
 
+    const res = await this.props.createRoom(roomId)
+
+    if (res.json.isLocked) {
+      this.props.openModal('Room Locked')
+      return
+    }
+
+    if (res.json.size === 1) {
+      this.props.openModal('Welcome')
+    }
+
     const user = await this.createUser()
 
-    const socket = connectSocket(roomId)
+    const io = connect(roomId)
 
-    this.socket = socket;
+    const disconnectEvents = [
+      'reconnect_failed',
+      'connect_timeout',
+      'connect_error',
+      'disconnect',
+      'reconnect',
+      'reconnect_error',
+      'reconnecting',
+      'reconnect_attempt',
+    ]
 
-    socket.on('disconnect', () => {
-      this.props.toggleSocketConnected(false)
+    disconnectEvents.forEach((evt) => {
+      io.on(evt, () => {
+        this.props.toggleSocketConnected(false)
+      })
     })
 
-    socket.on('connect', () => {
-      this.initApp(user)
-      this.props.toggleSocketConnected(true)
+    const connectEvents = [
+      'connect',
+      'reconnect',
+    ]
+
+    connectEvents.forEach((evt) => {
+      io.on(evt, () => {
+        if (evt === 'connect') {
+          if (!this.hasConnected) {
+            this.initApp(user)
+            this.hasConnected = true
+          }
+        }
+        this.props.toggleSocketConnected(true)
+      })
     })
 
-    socket.on('USER_ENTER', (payload) => {
-      this.props.receiveUnencryptedMessage('USER_ENTER', payload)
-      this.props.sendEncryptedMessage({
+    io.on('USER_ENTER', (payload) => {
+      this.props.receiveUserEnter(payload)
+      this.props.sendSocketMessage({
         type: 'ADD_USER',
         payload: {
           username: this.props.username,
@@ -85,42 +103,39 @@ class Home extends Component {
           id: this.props.userId,
         },
       })
-      if (payload.users.length === 1) {
-        this.props.openModal('Welcome');
-      }
     })
 
-    socket.on('USER_EXIT', (payload) => {
-      this.props.receiveUnencryptedMessage('USER_EXIT', payload)
+    io.on('USER_EXIT', (payload) => {
+      this.props.receiveUserExit(payload)
     })
 
-    socket.on('ENCRYPTED_MESSAGE', (payload) => {
-      this.props.receiveEncryptedMessage(payload)
+    io.on('PAYLOAD', (payload) => {
+      this.props.receiveSocketMessage(payload)
     })
 
-    socket.on('TOGGLE_LOCK_ROOM', (payload) => {
-      this.props.receiveUnencryptedMessage('TOGGLE_LOCK_ROOM', payload)
+    io.on('TOGGLE_LOCK_ROOM', (payload) => {
+      this.props.receiveToggleLockRoom(payload)
     })
-
-    socket.on('ROOM_LOCKED', (payload) => {
-      this.props.openModal('Room Locked')
-    });
-
-    window.addEventListener('beforeunload', (evt) => {
-      socket.emit('USER_DISCONNECT')
-    });
   }
 
   componentDidMount() {
     this.bindEvents()
 
+    if (this.props.joining) {
+      this.props.openModal('Connecting')
+    }
+
     this.beep = window.Audio && new window.Audio(beepFile)
   }
 
   componentWillReceiveProps(nextProps) {
+    if (this.props.joining && !nextProps.joining) {
+      this.props.closeModal()
+    }
+
     Tinycon.setBubble(nextProps.faviconCount)
 
-    if (nextProps.faviconCount !== 0 && nextProps.faviconCount !== this.props.faviconCount && this.props.soundIsEnabled) {
+    if (nextProps.faviconCount !== 0 && this.props.soundIsEnabled) {
       this.beep.play()
     }
   }
@@ -168,7 +183,7 @@ class Home extends Component {
 
   getActivityComponent(activity) {
     switch (activity.type) {
-      case 'TEXT_MESSAGE':
+      case 'SEND_MESSAGE':
         return (
           <Message
             sender={activity.username}
@@ -179,41 +194,22 @@ class Home extends Component {
       case 'USER_ENTER':
         return (
           <Notice>
-            <div>
-              <T data={{
-                username: <Username key={0} username={activity.username} />
-              }} path='userJoined'/>
-            </div>
+            <div><Username username={activity.username} /> joined</div>
           </Notice>
         )
       case 'USER_EXIT':
         return (
           <Notice>
-            <div>
-              <T data={{
-                username: <Username key={0} username={activity.username} />
-              }} path='userLeft'/>
-            </div>
+            <div><Username username={activity.username} /> left</div>
           </Notice>
         )
       case 'TOGGLE_LOCK_ROOM':
-        if (activity.locked) {
-          return (
-            <Notice>
-              <div><T data={{
-                username: <Username key={0} username={activity.username} />
-              }} path='lockedRoom'/></div>
-            </Notice>
-          )
-        } else {
-          return (
-            <Notice>
-              <div><T data={{
-                username: <Username key={0} username={activity.username} />
-              }} path='unlockedRoom'/></div>
-            </Notice>
-          )
-        }
+        const lockedWord = activity.locked ? 'locked' : 'unlocked'
+        return (
+          <Notice>
+            <div><Username username={activity.username} /> {lockedWord} the room</div>
+          </Notice>
+        )
       case 'NOTICE':
         return (
           <Notice>
@@ -223,11 +219,7 @@ class Home extends Component {
       case 'CHANGE_USERNAME':
         return (
           <Notice>
-            <div><T data={{
-              oldUsername: <Username key={0} username={activity.currentUsername} />,
-              newUsername: <Username key={1} username={activity.newUsername} />
-            }} path='nameChange'/>
-            </div>
+            <div><Username username={activity.currentUsername} /> changed their name to <Username username={activity.newUsername} /></div>
           </Notice>
         )
       case 'USER_ACTION':
@@ -240,15 +232,7 @@ class Home extends Component {
         const downloadUrl = getObjectUrl(activity.encodedFile, activity.fileType)
         return (
           <div>
-            <T data={{
-              username: <Username key={0} username={activity.username} />,
-            }} path='userSentFile'/>&nbsp;
-
-            <a target="_blank" href={downloadUrl} rel="noopener noreferrer">
-              <T data={{
-                filename: activity.fileName,
-              }} path='downloadFile'/>
-            </a>
+            <Username username={activity.username} /> sent you a file. <a target="_blank" href={downloadUrl} rel="noopener noreferrer">Download {activity.fileName}</a>
             {this.getFileDisplay(activity)}
           </div>
         )
@@ -256,11 +240,7 @@ class Home extends Component {
         const url = getObjectUrl(activity.encodedFile, activity.fileType)
         return (
           <Notice>
-            <div>
-              <T data={{
-                filename: <a key={0} target="_blank" href={url} rel="noopener noreferrer">{activity.fileName}</a>,
-              }} path='sentFile'/>&nbsp;
-            </div>
+            <div>You sent <a target="_blank" href={url} rel="noopener noreferrer">{activity.fileName}</a></div>
             {this.getFileDisplay(activity)}
           </Notice>
         )
@@ -280,22 +260,22 @@ class Home extends Component {
       case 'About':
         return {
           component: <About roomId={this.props.roomId} />,
-          title: this.props.translations.aboutHeader,
+          title: 'About',
         }
       case 'Settings':
         return {
-          component: <Settings roomId={this.props.roomId} toggleSoundEnabled={this.props.toggleSoundEnabled} soundIsEnabled={this.props.soundIsEnabled} setLanguage={this.props.setLanguage} language={this.props.language} translations={this.props.translations} />,
-          title: this.props.translations.settingsHeader,
+          component: <Settings roomId={this.props.roomId} toggleSoundEnabled={this.props.toggleSoundEnabled} soundIsEnabled={this.props.soundIsEnabled} />,
+          title: 'Settings & Help',
         }
       case 'Welcome':
         return {
-          component: <Welcome roomId={this.props.roomId} close={this.props.closeModal} translations={this.props.translations} />,
-          title: this.props.translations.welcomeHeader,
+          component: <Welcome roomId={this.props.roomId} close={this.props.closeModal} />,
+          title: 'Welcome to CacheRoom',
         }
       case 'Room Locked':
         return {
-          component: <RoomLocked modalContent={this.props.translations.lockedRoomHeader} />,
-          title: this.props.translations.lockedRoomHeader,
+          component: <RoomLocked />,
+          title: 'This room is locked',
           preventClose: true,
         }
       default:
@@ -307,7 +287,7 @@ class Home extends Component {
   }
 
   initApp(user) {
-    this.socket.emit('USER_ENTER', {
+    this.props.sendUserEnter({
       publicKey: user.publicKey,
     })
   }
@@ -381,17 +361,16 @@ class Home extends Component {
             members={this.props.members}
             roomId={this.props.roomId}
             roomLocked={this.props.roomLocked}
-            toggleLockRoom={() => this.props.sendUnencryptedMessage('TOGGLE_LOCK_ROOM')}
+            toggleLockRoom={this.props.toggleLockRoom}
             openModal={this.props.openModal}
             iAmOwner={this.props.iAmOwner}
             userId={this.props.userId}
-            translations={this.props.translations}
           />
         </div>
         <div className="main-chat">
           <div onClick={this.handleChatClick.bind(this)} className="message-stream h-100" ref={el => this.messageStream = el}>
             <ul className="plain" ref={el => this.activitiesList = el}>
-              <li><p className={styles.tos}><button className='btn btn-link' onClick={this.props.openModal.bind(this, 'About')}> <T path='agreement'/></button></p></li>
+              <li><p className={styles.tos}><button className='btn btn-link' onClick={this.props.openModal.bind(this, 'About')}> By using <span class="project_name">CacheRoom.com</span>, you are agreeing to our Acceptable Use Policy and Terms of Service.</button></p></li>
               {this.props.activities.map((activity, index) => (
                 <li key={index} className={`activity-item ${activity.type}`}>
                   {this.getActivityComponent(activity)}
@@ -444,8 +423,12 @@ Home.defaultProps = {
 }
 
 Home.propTypes = {
-  receiveEncryptedMessage: PropTypes.func.isRequired,
+  createRoom: PropTypes.func.isRequired,
+  receiveSocketMessage: PropTypes.func.isRequired,
+  sendSocketMessage: PropTypes.func.isRequired,
   createUser: PropTypes.func.isRequired,
+  receiveUserExit: PropTypes.func.isRequired,
+  receiveUserEnter: PropTypes.func.isRequired,
   activities: PropTypes.array.isRequired,
   username: PropTypes.string.isRequired,
   publicKey: PropTypes.object.isRequired,
@@ -453,62 +436,21 @@ Home.propTypes = {
   match: PropTypes.object.isRequired,
   roomId: PropTypes.string.isRequired,
   roomLocked: PropTypes.bool.isRequired,
+  toggleLockRoom: PropTypes.func.isRequired,
+  receiveToggleLockRoom: PropTypes.func.isRequired,
   modalComponent: PropTypes.string,
   openModal: PropTypes.func.isRequired,
   closeModal: PropTypes.func.isRequired,
   setScrolledToBottom: PropTypes.func.isRequired,
   scrolledToBottom: PropTypes.bool.isRequired,
   iAmOwner: PropTypes.bool.isRequired,
+  sendUserEnter: PropTypes.func.isRequired,
   userId: PropTypes.string.isRequired,
+  joining: PropTypes.bool.isRequired,
   toggleWindowFocus: PropTypes.func.isRequired,
   faviconCount: PropTypes.number.isRequired,
   soundIsEnabled: PropTypes.bool.isRequired,
   toggleSoundEnabled: PropTypes.func.isRequired,
   toggleSocketConnected: PropTypes.func.isRequired,
   socketConnected: PropTypes.bool.isRequired,
-  sendUnencryptedMessage: PropTypes.func.isRequired,
-  sendEncryptedMessage: PropTypes.func.isRequired
 }
-
-const mapStateToProps = (state) => {
-  const me = state.room.members.find(m => m.id === state.user.id)
-
-  return {
-    activities: state.activities.items,
-    userId: state.user.id,
-    username: state.user.username,
-    publicKey: state.user.publicKey,
-    privateKey: state.user.privateKey,
-    members: state.room.members.filter(m => m.username && m.publicKey),
-    roomId: state.room.id,
-    roomLocked: state.room.isLocked,
-    modalComponent: state.app.modalComponent,
-    scrolledToBottom: state.app.scrolledToBottom,
-    iAmOwner: Boolean(me && me.isOwner),
-    faviconCount: state.app.unreadMessageCount,
-    soundIsEnabled: state.app.soundIsEnabled,
-    socketConnected: state.app.socketConnected,
-    language: state.app.language,
-    translations: state.app.translations,
-  }
-}
-
-const mapDispatchToProps = {
-  receiveEncryptedMessage,
-  createUser,
-  openModal,
-  closeModal,
-  setScrolledToBottom,
-  toggleWindowFocus,
-  toggleSoundEnabled,
-  toggleSocketConnected,
-  receiveUnencryptedMessage,
-  sendUnencryptedMessage,
-  sendEncryptedMessage,
-  setLanguage
-}
-
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(Home)

@@ -39,18 +39,18 @@ class RoomLink extends Component {
         <div className="form-group">
           <div className="input-group">
             <input id="room-url" className="form-control" type="text" readOnly value={this.state.roomUrl} />
-            <div className="input-group-append">
+            <span className="input-group-btn">
               <button
                 className="copy-room btn btn-secondary"
                 type="button"
                 data-toggle="tooltip"
                 data-placement="bottom"
                 data-clipboard-text={this.state.roomUrl}
-                title={this.props.translations.copyButtonTooltip}
+                title="Copied!"
               >
-                <Copy />
+                <Copy className="mt-1" />
               </button>
-            </div>
+            </span>
           </div>
         </div>
       </form>
@@ -60,7 +60,6 @@ class RoomLink extends Component {
 
 RoomLink.propTypes = {
   roomId: PropTypes.string.isRequired,
-  translations: PropTypes.object.isRequired,
 }
 
 export default RoomLink

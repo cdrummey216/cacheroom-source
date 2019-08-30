@@ -4,7 +4,7 @@ export default class Connecting extends Component {
   render() {
     return (
       <div>
-        Please wait while we secure a connection to Darkwire...
+        Please wait while we secure a connection to <i>ewc</i>...
       </div>
     )
   }
