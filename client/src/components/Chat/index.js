@@ -2,10 +2,11 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import sanitizeHtml from 'sanitize-html'
 import FileTransfer from 'components/FileTransfer'
-import { Paperclip } from 'react-feather'
+import { CornerDownRight } from 'react-feather'
 import { connect } from 'react-redux'
-import { clearActivities, showNotice } from '../../actions'
+import { clearActivities, showNotice, sendEncryptedMessage } from '../../actions'
 import { getSelectedText, hasTouchSupport } from '../../utils/dom'
+
 // Disable for now
 // import autosize from 'autosize'
 
@@ -51,7 +52,7 @@ export class Chat extends Component {
           })
         }
 
-        this.props.sendSocketMessage({
+        this.props.sendEncryptedMessage({
           type: 'CHANGE_USERNAME',
           payload: {
             id: this.props.userId,
@@ -85,7 +86,7 @@ export class Chat extends Component {
           return false
         }
 
-        this.props.sendSocketMessage({
+        this.props.sendEncryptedMessage({
           type: 'USER_ACTION',
           payload: {
             action: actionMessage,
@@ -216,8 +217,8 @@ export class Chat extends Component {
         return
       }
     } else {
-      this.props.sendSocketMessage({
-        type: 'SEND_MESSAGE',
+      this.props.sendEncryptedMessage({
+        type: 'TEXT_MESSAGE',
         payload: {
           text: message,
           timestamp: Date.now(),
@@ -253,13 +254,13 @@ export class Chat extends Component {
           autoFocus
           className="chat"
           value={this.state.message}
-          placeholder="Type here"
+          placeholder={this.props.translations.typePlaceholder}
           onChange={this.handleInputChange.bind(this)} />
         <div className="input-controls">
-          <FileTransfer sendSocketMessage={this.props.sendSocketMessage} />
+          <FileTransfer sendEncryptedMessage={this.props.sendEncryptedMessage} />
           {touchSupport &&
             <button onClick={this.handleSendClick.bind(this)} className={`icon is-right send btn btn-link ${this.canSend() ? 'active' : ''}`}>
-              <Paperclip className={this.canSend() ? '' : 'disabled'} />
+              <CornerDownRight className={this.canSend() ? '' : 'disabled'} />
             </button>
           }
         </div>
@@ -269,23 +270,26 @@ export class Chat extends Component {
 }
 
 Chat.propTypes = {
-  sendSocketMessage: PropTypes.func.isRequired,
+  sendEncryptedMessage: PropTypes.func.isRequired,
   showNotice: PropTypes.func.isRequired,
   userId: PropTypes.string.isRequired,
   username: PropTypes.string.isRequired,
   clearActivities: PropTypes.func.isRequired,
   focusChat: PropTypes.bool.isRequired,
   scrollToBottom: PropTypes.func.isRequired,
+  translations: PropTypes.object.isRequired,
 }
 
 const mapStateToProps = state => ({
   username: state.user.username,
   userId: state.user.id,
+  translations: state.app.translations,
 })
 
 const mapDispatchToProps = {
   clearActivities,
   showNotice,
+  sendEncryptedMessage
 }
 
 export default connect(

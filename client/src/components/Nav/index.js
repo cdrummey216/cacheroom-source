@@ -1,10 +1,8 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import shortId from 'shortid'
-import { MoreVertical, Sliders, PlusSquare, Lock, Unlock, Star } from 'react-feather'
-import logoImg from 'img/logo.svg'
-import Single from 'img/user.svg'
-import Double from 'img/users.png'
+import { Info, Settings, PlusCircle, User, Users, Lock, Unlock, Star } from 'react-feather'
+import logoImg from 'img/logo.png'
 import Dropdown, { DropdownTrigger, DropdownContent } from 'react-simple-dropdown'
 import Username from 'components/Username'
 import Clipboard from 'clipboard'
@@ -66,11 +64,12 @@ class Nav extends Component {
     return (
       <nav className="navbar navbar-expand-md navbar-dark">
         <div className="meta">
-        <img src={logoImg} title="CacheRoom" className="logo" />
-        <button
+          <img src={logoImg} alt="Darkwire" className="logo" />
+
+          <button
             data-toggle="tooltip"
             data-placement="bottom"
-            title="Copied"
+            title={this.props.translations.copyButtonTooltip}
             data-clipboard-text={`${window.location.origin}/${this.props.roomId}`}
             className="btn btn-plain btn-link clipboard-trigger room-id ellipsis">
             {`/${this.props.roomId}`}
@@ -96,7 +95,7 @@ class Nav extends Component {
           <Dropdown className="members-dropdown">
             <DropdownTrigger>
               <button className="btn btn-link btn-plain members-action">
-                <img src={Double} title="Users" className="users-icon" />
+                <Users className="users-icon" />
               </button>
               <span>{this.props.members.length}</span>
             </DropdownTrigger>
@@ -108,7 +107,7 @@ class Nav extends Component {
                     <span className="icon-container">
                       {member.id === this.props.userId &&
                         <span data-toggle="tooltip" data-placement="bottom" title="Me" className="me-icon-wrap">
-                          <img src={Single} title="User" className="me-icon" />
+                          <User className="me-icon" />
                         </span>
                       }
                       {member.isOwner &&
@@ -137,13 +136,14 @@ class Nav extends Component {
         <div className="collapse navbar-collapse" id="navbarSupportedContent">
           <ul className="navbar-nav ml-auto">
             <li className="nav-item">
-              <button title="New Room" className="btn btn-plain nav-link" onClick={this.newRoom.bind(this)}target="blank"><PlusSquare /></button>
+              <button className="btn btn-plain nav-link" onClick={this.newRoom.bind(this)}target="blank"><PlusCircle /> <span>{this.props.translations.newRoomButton}</span></button>
+            </li>
+            <li className="
+            nav-item">
+              <button onClick={this.handleSettingsClick.bind(this)} className="btn btn-plain nav-link"><Settings /> <span>{this.props.translations.settingsButton}</span></button>
             </li>
             <li className="nav-item">
-              <button title="Settings" onClick={this.handleSettingsClick.bind(this)} className="btn btn-plain nav-link"><Sliders /></button>
-            </li>
-            <li className="nav-item">
-              <button title="About CacheRoom" onClick={this.handleAboutClick.bind(this)} className="btn btn-plain nav-link"><MoreVertical /></button>
+              <button onClick={this.handleAboutClick.bind(this)} className="btn btn-plain nav-link"><Info /> <span>{this.props.translations.aboutButton}</span></button>
             </li>
           </ul>
         </div>
@@ -160,6 +160,7 @@ Nav.propTypes = {
   toggleLockRoom: PropTypes.func.isRequired,
   openModal: PropTypes.func.isRequired,
   iAmOwner: PropTypes.bool.isRequired,
+  translations: PropTypes.object.isRequired,
 }
 
 export default Nav
