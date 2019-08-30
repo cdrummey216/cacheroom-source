@@ -14,7 +14,7 @@ class Welcome extends Component {
     return (
       <div>
         <div>
-          v2.0 is a complete rewrite and includes several new features. Here are some highlights:
+          CacheRoom has several default features. Here are some highlights:
           <ul className="native">
             <li>Support on all modern browsers (Chrome, Firefox, Safari, Safari iOS, Android)</li>
             <li>Slash commands (/nick, /me, /clear)</li>
