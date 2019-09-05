@@ -147,7 +147,7 @@ io.on('connection', async (socket) => {
 
 const init = async () => {
   server.listen(PORT, () => {
-    console.log(`Darkwire is online at port ${PORT}`);
+    console.log(`CacheRoom is online at port ${PORT}`);
   })
 
   pollForInactiveRooms();
